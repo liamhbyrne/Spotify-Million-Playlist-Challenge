@@ -7,8 +7,9 @@ CREATE TABLE IF NOT EXISTS artist (
 CREATE TABLE IF NOT EXISTS album (
     album_uri VARCHAR(50),
     album_name VARCHAR(100),
-    artist_uri VARCHAR(50)
-    FOREIGN KEY (album_uri) REFERENCES artist(artist_uri) 
+    artist_uri VARCHAR(50),
+    PRIMARY KEY (album_uri),
+    FOREIGN KEY (artist_uri) REFERENCES artist(artist_uri)
 );
 
 CREATE TABLE IF NOT EXISTS track (
@@ -31,7 +32,7 @@ CREATE TABLE IF NOT EXISTS playlist (
     num_edits INTEGER,
     duration_ms INTEGER,
     num_artists INTEGER,
-    PRIMARY KEY (pid),
+    PRIMARY KEY (pid)
 );
 
 CREATE TABLE IF NOT EXISTS playlist_track (

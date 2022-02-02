@@ -16,6 +16,9 @@ class DBManager:
         else:
             raise Exception("DB_ADDRESS not provided in environmental variables")
 
+    def disconnect(self):
+        self._conn.close()
+
     def getCursor(self):
         if not self._conn.closed:
             return self._conn.cursor()

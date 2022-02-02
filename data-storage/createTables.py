@@ -1,6 +1,6 @@
 from DBManager import DBManager
 
-class CreateTables(DBManager):
+class TableCreator(DBManager):
     def __init__(self):
         super().__init__()
 
@@ -9,6 +9,8 @@ class CreateTables(DBManager):
             c.execute(open("schema.sql").read())
             self._conn.commit()
 
+
 if __name__ == '__main__':
-    c = CreateTables()
+    c = TableCreator()
     c.create()
+    c.disconnect()

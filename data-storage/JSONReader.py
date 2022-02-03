@@ -100,7 +100,7 @@ if __name__ == '__main__':
     # TIMER START
     start = time.time()
 
-    j = JSONReader(os.environ.get('DATASET_PATH'),25)
+    j = JSONReader(os.environ.get('DATASET_PATH'))
     #j.parse(r"C:\Users\Liam\Documents\Spotify-Million-Playlist-Challenge\sample-data\mpd.slice.0-999.json")
     j.start()
 

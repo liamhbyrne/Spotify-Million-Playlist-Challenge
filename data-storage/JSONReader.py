@@ -24,7 +24,7 @@ class JSONReader(DBManager):
             logging.error("Check environmental variable for DATASET_PATH")
             raise Exception("No path to directory provided.")
 
-        with ThreadPoolExecutor(max_workers=4) as executor:
+        with ThreadPoolExecutor(max_workers=1) as executor:
             futures = [executor.submit(self.parse, "%s/%s" % (self._dir_path, file)) for file in os.listdir(self._dir_path)[:self._n]
                 if file.endswith(".json")]
             for future in as_completed(futures):
@@ -87,7 +87,7 @@ if __name__ == '__main__':
     # TIMER START
     start = time.time()
 
-    j = JSONReader(os.environ.get('DATASET_PATH'),20)
+    j = JSONReader(os.environ.get('DATASET_PATH'),10)
     #j.parse(r"C:\Users\Liam\Documents\Spotify-Million-Playlist-Challenge\sample-data\mpd.slice.0-999.json")
     j.start()
 

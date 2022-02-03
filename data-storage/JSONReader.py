@@ -5,6 +5,7 @@ import time
 from concurrent.futures._base import as_completed
 from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Dict, Tuple
+import sys
 
 from psycopg2.extras import execute_values
 
@@ -24,9 +25,12 @@ class JSONReader(DBManager):
             logging.error("Check environmental variable for DATASET_PATH")
             raise Exception("No path to directory provided.")
 
-        for file in os.listdir(self._dir_path)[:self._n]:
-                if file.endswith(".json"):
-                    self.insertIntoDB(*self.parse("%s/%s" % (self._dir_path, file)))
+        total = len(os.listdir(self._dir_path)[:self._n])
+        for i, file in enumerate(os.listdir(self._dir_path)[:self._n]):
+            if file.endswith(".json"):
+                self.insertIntoDB(*self.parse("%s/%s" % (self._dir_path, file)))
+                self.printProgressBar(i, total)
+
 
     def parse(self, file_path : str):
         '''
@@ -52,7 +56,6 @@ class JSONReader(DBManager):
                     tracks[t['track_uri']] = (t['track_name'], t['duration_ms'], t['album_uri'])
                     playlist_tracks[(t['track_uri'], p['pid'])] = t['pos']
 
-        logging.info("There are {} playlists in this file".format(len(playlists)))
         return artists, albums, tracks, playlist_tracks, playlists
 
     def insertIntoDB(self, artists, albums, tracks, playlist_tracks, playlists):
@@ -78,6 +81,13 @@ class JSONReader(DBManager):
                                         VALUES %s ON CONFLICT DO NOTHING;'''
             execute_values(cur, insert_playlist_tracks, [(*x, playlist_tracks[x]) for x in playlist_tracks])
             self._conn.commit()
+
+    def printProgressBar(self, i, max):
+        n_bar = 30  # size of progress bar
+        j = i / max
+        sys.stdout.write('\r')
+        sys.stdout.write(f"[{'=' * int(n_bar * j):{n_bar}s}] {int(100 * j)}%")
+        sys.stdout.flush()
 
 
 if __name__ == '__main__':

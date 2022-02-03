@@ -1,4 +1,8 @@
+import logging
+
 from DBManager import DBManager
+
+logging.getLogger().setLevel(logging.INFO)
 
 class TableCreator(DBManager):
     def __init__(self):
@@ -8,6 +12,7 @@ class TableCreator(DBManager):
         with self.getCursor() as c:
             c.execute(open("schema.sql").read())
             self._conn.commit()
+            logging.info("Tables created")
 
 
 if __name__ == '__main__':

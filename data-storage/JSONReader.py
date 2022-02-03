@@ -18,6 +18,11 @@ class JSONReader(DBManager):
         super().__init__()
         self._dir_path = dir_path
         self._n = n  # number of files in directory to parse
+        self._master_artists: Dict[str, str] = {}  # Dictionaries enforce unique keys
+        self._master_albums: Dict[str, Tuple] = {}
+        self._master_tracks: Dict[str, Tuple] = {}
+        self._master_playlist_tracks: Dict[Tuple, int] = {}
+        self._master_playlists: Dict[int, Tuple] = {}
 
     def start(self):
         if not self._dir_path:
@@ -28,8 +33,16 @@ class JSONReader(DBManager):
             futures = [executor.submit(self.parse, "%s/%s" % (self._dir_path, file)) for file in os.listdir(self._dir_path)[:self._n]
                 if file.endswith(".json")]
             for future in as_completed(futures):
-                self.insertIntoDB(*future.result())
+                artists, albums, tracks, playlist_tracks, playlists = future.result()
+                self._master_artists = self._master_artists | artists
+                self._master_albums = self._master_albums | albums
+                self._master_tracks = self._master_tracks | tracks
+                self._master_playlist_tracks = self._master_playlist_tracks | playlist_tracks
+                self._master_playlists = self._master_playlists | playlists
 
+        logging.info("Total number of tracks {}".format(len(self._master_tracks)))
+        self.insertIntoDB(self._master_artists, self._master_albums, self._master_tracks, self._master_playlist_tracks,
+                          self._master_playlists)
 
     def parse(self, file_path : str):
         '''
@@ -87,7 +100,7 @@ if __name__ == '__main__':
     # TIMER START
     start = time.time()
 
-    j = JSONReader(os.environ.get('DATASET_PATH'),20)
+    j = JSONReader(os.environ.get('DATASET_PATH'),25)
     #j.parse(r"C:\Users\Liam\Documents\Spotify-Million-Playlist-Challenge\sample-data\mpd.slice.0-999.json")
     j.start()
 

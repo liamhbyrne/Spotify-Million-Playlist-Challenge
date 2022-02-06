@@ -2,14 +2,13 @@ import json
 import logging
 import os
 import time
-from concurrent.futures._base import as_completed
-from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Dict, Tuple
 import sys
+import config
 
 from psycopg2.extras import execute_values
 
-from DBManager import DBManager
+from .DBManager import DBManager
 
 logging.getLogger().setLevel(logging.INFO)
 
@@ -94,8 +93,7 @@ if __name__ == '__main__':
     # TIMER START
     start = time.time()
 
-    j = JSONReader(os.environ.get('DATASET_PATH'))
-    #j.parse(r"C:\Users\Liam\Documents\Spotify-Million-Playlist-Challenge\sample-data\mpd.slice.0-999.json")
+    j = JSONReader(config.DATASET_PATH)
     j.start()
 
     # TIMER DONE

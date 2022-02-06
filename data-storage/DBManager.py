@@ -1,12 +1,12 @@
-import os
 import psycopg2
 import logging
+import config
 
 logging.getLogger().setLevel(logging.INFO)
 
 class DBManager:
     def __init__(self):
-        self._address = os.environ.get('DB_ADDRESS')
+        self._address = config.POSTGRES_ADDRESS
         self._conn = self.connect()
 
     def connect(self):

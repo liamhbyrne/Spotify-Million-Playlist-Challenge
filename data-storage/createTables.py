@@ -1,6 +1,6 @@
 import logging
 
-from DBManager import DBManager
+from .DBManager import DBManager
 
 logging.getLogger().setLevel(logging.INFO)
 

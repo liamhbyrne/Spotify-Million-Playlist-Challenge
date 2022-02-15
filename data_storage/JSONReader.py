@@ -8,7 +8,7 @@ import config
 
 from psycopg2.extras import execute_values
 
-from .DBManager import DBManager
+from DBManager import DBManager
 
 logging.getLogger().setLevel(logging.INFO)
 

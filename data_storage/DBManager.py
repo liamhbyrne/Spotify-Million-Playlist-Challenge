@@ -4,6 +4,7 @@ import config
 
 logging.getLogger().setLevel(logging.INFO)
 
+
 class DBManager:
     def __init__(self):
         self._address = config.POSTGRES_ADDRESS

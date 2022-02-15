@@ -1,7 +1,6 @@
 import logging
 
-from .DBManager import DBManager
-
+from . import DBManager
 logging.getLogger().setLevel(logging.INFO)
 
 class TableCreator(DBManager):

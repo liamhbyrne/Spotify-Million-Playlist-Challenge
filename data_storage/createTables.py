@@ -1,6 +1,6 @@
 import logging
 
-from DBManager import DBManager
+from data_storage.DBManager import DBManager
 
 logging.getLogger().setLevel(logging.INFO)
 
@@ -15,7 +15,7 @@ class TableCreator(DBManager):
         """
         cursor = self.get_cursor()
 
-        with open("schema.sql", "r") as f:
+        with open("data_storage/schema.sql", "r") as f:
             schema_script = f.read()
 
         cursor.executescript(schema_script)

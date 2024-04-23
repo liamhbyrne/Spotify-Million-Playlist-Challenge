@@ -147,10 +147,24 @@ class Track2VecTrainer:
         """
         Log the training metrics to tensorboard.
         """
-        writer = SummaryWriter(f"runs/{run_name}")
+        # Map self._track_vocab to the Artist and Track name using DB
+        query = f"""
+            SELECT artist.artist_name, track.track_name
+            FROM track
+            JOIN album ON track.album_uri = album.album_uri
+            JOIN artist ON album.artist_uri = artist.artist_uri
+            WHERE track_uri IN ({','.join(['?']*len(self._track_vocab))});
+        """
+
+        db_results = pd.read_sql(query, self._db.get_connection(), params=self._track_vocab)
+        named_tracks = db_results.apply(lambda x: f"{x['artist_name']}: {x['track_name']}", axis=1).values.tolist()
+
+        named_tracks.append("PAD")
+
+        writer = SummaryWriter(f"../tensorboard_runs/{run_name}")
         writer.add_embedding(
             self._model.embedding.weight,
-            metadata=self._track_vocab,
+            metadata=named_tracks,
             tag=f"Track2Vec-CBOW",
         )
         writer.close()
@@ -204,12 +218,12 @@ if __name__ == '__main__':
     )
 
     dataset = trainer.build_CBOW_dataset(
-        n_playlists=10
+        n_playlists=1000
     )
 
     trainer.train(dataset, epochs=1)
 
-    trainer.save_model("models/track2vec.pt")
+    trainer.save_model(f"/scratch/dlt/models/track2vec@{time.strftime('%Y%m%d-%H%M%S')}.pt")
 
     # Log to tensorboard use current datetime as run name
-    trainer.to_tensorboard(f"run@{time.strftime('%Y%m%d-%H%M%S')}")
+    trainer.to_tensorboard(f"/scratch/dlt/run@{time.strftime('%Y%m%d-%H%M%S')}")

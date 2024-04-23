@@ -212,18 +212,18 @@ class Track2Vec(nn.Module):
 
 if __name__ == '__main__':
     trainer = Track2VecTrainer(
-        embedding_dim=250,
-        context_size=50000,
+        embedding_dim=32,
+        context_size=5,
         causal_cbow=True
     )
 
     dataset = trainer.build_CBOW_dataset(
-        n_playlists=50000
+        n_playlists=1000
     )
 
     trainer.train(dataset, epochs=1)
 
-    trainer.save_model(f"/scratch/lhb1g20/dlt/models/track2vec@{time.strftime('%Y%m%d-%H%M%S')}.pt")
+    trainer.save_model(f"/scratch/dlt/models/track2vec@{time.strftime('%Y%m%d-%H%M%S')}.pt")
 
     # Log to tensorboard use current datetime as run name
-    trainer.to_tensorboard(f"/scratch/lhb1g20/dlt/run@{time.strftime('%Y%m%d-%H%M%S')}")
+    trainer.to_tensorboard(f"/scratch/dlt/run@{time.strftime('%Y%m%d-%H%M%S')}")

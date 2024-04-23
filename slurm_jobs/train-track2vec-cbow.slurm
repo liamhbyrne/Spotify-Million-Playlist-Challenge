@@ -11,8 +11,8 @@
 #SBATCH --cpus-per-task=2     # Threads per task
 #SBATCH --time=60:00:00   # walltime
 #SBATCH --partition=lyceum # Name of the parititon
-#SBATCH --output=logs/build_db.%j.out
-#SBATCH --error=logs/build_db.%j.err
+#SBATCH --output=logs/train_track_to_vec.%j.out
+#SBATCH --error=logs/train_track_to_vec.%j.err
 
 module load conda
 

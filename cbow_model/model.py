@@ -1,9 +1,14 @@
+import os
+
+import pandas as pd
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+from torch.utils.tensorboard import SummaryWriter
 
 from cbow_model.dataset import CBOWDataset
+from data_storage.DBManager import DBManager
 
 
 class Track2Vec(nn.Module):
@@ -42,19 +47,33 @@ def train(model: Track2Vec, ds_train: CBOWDataset, epochs : int) -> Track2Vec:
     return model
 
 
+def to_tensorboard(model: Track2Vec, ds: CBOWDataset, run_name: str):
+    writer = SummaryWriter(f'./runs/{run_name}/')
+    writer.add_embedding(
+        model.embedding.weight,
+        metadata=ds.get_named_tracks(),
+        tag=f"Track2Vec-CBOW",
+    )
+    writer.close()
+
+
 if __name__ == '__main__':
     CONTEXT_SIZE = 5
-    N_PLAYLISTS = 1_000
+    N_PLAYLISTS = 10
     EMBEDDING_DIM = 250
+    N_EPOCHS = 10
 
-    ds = CBOWDataset(n_playlists=N_PLAYLISTS, context_size=CONTEXT_SIZE)
+    db = DBManager()
+    ds = CBOWDataset(db, n_playlists=N_PLAYLISTS, context_size=CONTEXT_SIZE)
     model = Track2Vec(
         num_tracks=ds.n_tracks,
         embedding_dim=EMBEDDING_DIM,
         context_size=CONTEXT_SIZE
     )
-    trained_model = train(model, ds, epochs=10)
+    trained_model = train(model, ds, epochs=N_EPOCHS)
     torch.save(
         trained_model.state_dict(),
         f"cbow_model_{CONTEXT_SIZE}_{N_PLAYLISTS}_{EMBEDDING_DIM}.pt"
     )
+
+    to_tensorboard(trained_model, ds, run_name="cbow_model")

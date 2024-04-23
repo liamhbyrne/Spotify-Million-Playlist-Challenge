@@ -1,6 +1,8 @@
 import polars as pl
 import torch
 from torch.utils.data import Dataset
+from typing import List
+
 from data_storage.DBManager import DBManager
 
 
@@ -8,12 +10,18 @@ class CBOWDataset(Dataset):
     """
     Selects tracks from the dataset on the SQLite database.
     """
-    def __init__(self, n_playlists: int, context_size: int = 5):
+    def __init__(self, db_manager: DBManager, n_playlists: int, context_size: int = 5):
         self.n_playlists = n_playlists
         self.context_size = context_size
-        self._db = DBManager()
-        self.cur = self._db.get_cursor()
+        self.db = db_manager
+        self.cur = self.db.get_cursor()
         self.dataset = self._make_dataset()
+
+    def get_named_tracks(self) -> List[str]:
+        return [
+            self.dataset.filter(self.dataset['track_uri'] == track_uri)['track_name'][0]
+            for track_uri in self.track_vocab[:-1]
+        ] + ["PAD"]
 
     def _make_dataset(self) -> pl.DataFrame:
         """
@@ -23,26 +31,26 @@ class CBOWDataset(Dataset):
             track_idx: internal index of the track
         """
         query = f"""
-            SELECT PT.track_uri, PT.pid, PT.pos
+            SELECT PT.track_uri, PT.pid, PT.pos, T.track_name
             FROM playlist_track PT
+            JOIN track T ON PT.track_uri = T.track_uri
             WHERE PT.pid IN (SELECT pid FROM playlist LIMIT {self.n_playlists});
         """
         # Playlist tracks as dataframe
-        df_pl_tracks = pl.read_database(query, self._db.get_connection())
+        df_pl_tracks = pl.read_database(query, self.db.get_connection())
 
         # Get a list of unique tracks
         self.track_vocab = df_pl_tracks["track_uri"].unique().to_list() + ["PAD"]
         self.track_2_idx = {track: idx for idx, track in enumerate(self.track_vocab)}
         self.idx_2_track = lambda idx: self.track_vocab[idx]
 
-        # Map track_uri to track_idx and drop track_uri
+        # Map track_uri to track_idx
         df_pl_tracks = df_pl_tracks.with_columns(
             track_idx=pl.col("track_uri").replace(
                 self.track_2_idx,
                 return_dtype=pl.UInt32
             )
         )
-        df_pl_tracks = df_pl_tracks.drop("track_uri")
         return df_pl_tracks
 
     @property

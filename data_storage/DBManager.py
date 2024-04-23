@@ -22,6 +22,9 @@ class DBManager:
         else:
             raise Exception("SQLITE_ADDRESS not provided in config file")
 
+    def get_connection(self):
+        return self._conn
+
     def disconnect(self):
         self._conn.close()
         logging.info("Disconnected from DB")

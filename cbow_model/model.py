@@ -113,12 +113,14 @@ def to_tensorboard(model: Track2Vec, ds: CBOWDataset, run_name: str):
 if __name__ == "__main__":
     RUN_NAME = f"cbow_model@{time.strftime('%Y-%m-%d-%H-%M-%S')}"
     CONTEXT_SIZE = 5
-    N_PLAYLISTS = 10000
-    MIN_FREQ = 4
-    EMBEDDING_DIM = 64
+    N_PLAYLISTS = 20000
+    MIN_FREQ = 100
+    EMBEDDING_DIM = 32
     N_EPOCHS = 1
     BATCH_SIZE = 32
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
+    print(f"Run {RUN_NAME} on {DEVICE}\n Context size: {CONTEXT_SIZE}\n N playlists: {N_PLAYLISTS}\n Min freq: {MIN_FREQ}\n Embedding dim: {EMBEDDING_DIM}\n Epochs: {N_EPOCHS}\n Batch size: {BATCH_SIZE}")
 
     db = DBManager()
     ds = CBOWDataset(
@@ -126,10 +128,12 @@ if __name__ == "__main__":
         n_playlists=N_PLAYLISTS,
         context_size=CONTEXT_SIZE,
         min_freq=MIN_FREQ,
-        preloaded_dataset_path="./datasets/cbow_dataset_test.csv",
+        # preloaded_dataset_path="./datasets/cbow_dataset_20k_min5.csv",
     )
 
-    # ds.save_dataset("./datasets/cbow_dataset_test.csv")
+    print(f"Vocab size: {len(ds.track_vocab)}")
+
+    ds.save_dataset("./datasets/cbow_dataset_20k_min100.csv")
 
     model = Track2Vec(
         num_tracks=ds.n_tracks, embedding_dim=EMBEDDING_DIM, context_size=CONTEXT_SIZE

@@ -9,6 +9,7 @@ class DatasetReducer(DBManager):
     This class is used to reduce the size of the dataset by removing tracks and artists that appear in less than n
     playlists.
     """
+
     def __init__(self):
         super().__init__()
 

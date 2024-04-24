@@ -76,7 +76,7 @@ class JSONReader(DBManager):
         albums: Dict[str, Tuple],
         tracks: Dict[str, Tuple],
         playlist_tracks: Dict[Tuple, int],
-        playlists: Dict[int, Tuple]
+        playlists: Dict[int, Tuple],
     ):
         """
         Insert the dictionaries into the corresponding tables in the database.

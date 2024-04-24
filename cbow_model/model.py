@@ -30,11 +30,11 @@ class Track2Vec(nn.Module):
         return self.model(embeddings)
 
 
-def train(model: Track2Vec, ds_train: CBOWDataset, epochs: int) -> Track2Vec:
+def train(model: Track2Vec, ds_train: CBOWDataset, epochs: int, batch_size:int) -> Track2Vec:
     print("Training CBOW model")
     criterion = nn.NLLLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-    data_loader = DataLoader(ds_train, batch_size=32, shuffle=True)
+    data_loader = DataLoader(ds_train, batch_size=batch_size, shuffle=True)
     for epoch in range(1, epochs + 1):
         print(f"Epoch {epoch}")
         total_loss = 0
@@ -113,13 +113,16 @@ if __name__ == "__main__":
     N_PLAYLISTS = 20
     EMBEDDING_DIM = 64
     N_EPOCHS = 1
+    BATCH_SIZE = 32
 
     db = DBManager()
     ds = CBOWDataset(db, n_playlists=N_PLAYLISTS, context_size=CONTEXT_SIZE)
     model = Track2Vec(
         num_tracks=ds.n_tracks, embedding_dim=EMBEDDING_DIM, context_size=CONTEXT_SIZE
     )
-    trained_model = train(model, ds, epochs=N_EPOCHS)
+    trained_model = train(
+        model, ds, epochs=N_EPOCHS, batch_size=BATCH_SIZE
+    )
     save_model(
         trained_model,
         ds.track_2_idx,

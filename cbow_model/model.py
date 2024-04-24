@@ -108,6 +108,7 @@ def to_tensorboard(model: Track2Vec, ds: CBOWDataset, run_name: str):
 
 
 if __name__ == "__main__":
+    RUN_NAME = f"cbow_model@{time.strftime('%Y-%m-%d-%H-%M-%S')}"
     CONTEXT_SIZE = 5
     N_PLAYLISTS = 20
     EMBEDDING_DIM = 64
@@ -122,11 +123,11 @@ if __name__ == "__main__":
     save_model(
         trained_model,
         ds.track_2_idx,
-        f"./model_states/cbow_model_con{CONTEXT_SIZE}_pl{N_PLAYLISTS}_emb{EMBEDDING_DIM}_ep{N_EPOCHS}.pt",
+        f"./model_states/{RUN_NAME}_con{CONTEXT_SIZE}_pl{N_PLAYLISTS}_emb{EMBEDDING_DIM}_ep{N_EPOCHS}.pt",
     )
 
     to_tensorboard(
-        trained_model, ds, run_name=f"cbow_model@{time.strftime('%Y-%m-%d-%H-%M-%S')}"
+        trained_model, ds, run_name=RUN_NAME
     )
 
     db.disconnect()

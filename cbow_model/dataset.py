@@ -13,7 +13,14 @@ class CBOWDataset(Dataset):
     Selects tracks from the dataset on the SQLite database.
     """
 
-    def __init__(self, db_manager: DBManager, n_playlists: int, context_size: int = 5, min_freq: int = 5, preloaded_dataset_path: str = None):
+    def __init__(
+        self,
+        db_manager: DBManager,
+        n_playlists: int,
+        context_size: int = 5,
+        min_freq: int = 5,
+        preloaded_dataset_path: str = None,
+    ):
         self.n_playlists = n_playlists
         self.context_size = context_size
         self.min_freq = min_freq
@@ -23,7 +30,6 @@ class CBOWDataset(Dataset):
         self.logger.setLevel(logging.INFO)
         self.cur = self.db.get_cursor()
         self.dataset = self._make_dataset()
-
 
     def get_named_tracks(self) -> List[str]:
         """
@@ -62,7 +68,9 @@ class CBOWDataset(Dataset):
             df_pl_tracks = pl.read_csv(self.preloaded_dataset_path)
 
             self.track_vocab = df_pl_tracks["track_uri"].unique().to_list() + ["PAD"]
-            self.track_2_idx = {track: idx for idx, track in enumerate(self.track_vocab)}
+            self.track_2_idx = {
+                track: idx for idx, track in enumerate(self.track_vocab)
+            }
             self.idx_2_track = lambda idx: self.track_vocab[idx]
 
             return df_pl_tracks

@@ -28,7 +28,9 @@ class Track2Vec(nn.Module):
         return self.model(embeddings)
 
 
-def train(model: Track2Vec, ds_train: CBOWDataset, epochs: int, batch_size:int) -> Track2Vec:
+def train(
+    model: Track2Vec, ds_train: CBOWDataset, epochs: int, batch_size: int
+) -> Track2Vec:
     print("Training CBOW model")
     criterion = nn.NLLLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
@@ -64,7 +66,7 @@ def save_model(model: Track2Vec, track2idx: dict, path: str):
     torch.save(model.state_dict(), path)
 
     # Change the extension to .pkl
-    mapping_path = path.replace(".pt", f"-track2idx.pkl")
+    mapping_path = path.replace(".pt", "-track2idx.pkl")
     with open(mapping_path, "wb") as f:
         pickle.dump(track2idx, f)
 
@@ -103,7 +105,7 @@ def to_tensorboard(model: Track2Vec, ds: CBOWDataset, run_name: str):
     writer.add_embedding(
         model.embedding.weight,
         metadata=ds.get_named_tracks(),
-        tag=f"Track2Vec-CBOW",
+        tag="Track2Vec-CBOW",
     )
     writer.close()
 
@@ -119,7 +121,13 @@ if __name__ == "__main__":
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
     db = DBManager()
-    ds = CBOWDataset(db, n_playlists=N_PLAYLISTS, context_size=CONTEXT_SIZE, min_freq=MIN_FREQ, preloaded_dataset_path="./datasets/cbow_dataset_test.csv")
+    ds = CBOWDataset(
+        db,
+        n_playlists=N_PLAYLISTS,
+        context_size=CONTEXT_SIZE,
+        min_freq=MIN_FREQ,
+        preloaded_dataset_path="./datasets/cbow_dataset_test.csv",
+    )
 
     # ds.save_dataset("./datasets/cbow_dataset_test.csv")
 
@@ -127,17 +135,13 @@ if __name__ == "__main__":
         num_tracks=ds.n_tracks, embedding_dim=EMBEDDING_DIM, context_size=CONTEXT_SIZE
     ).to(DEVICE)
 
-    trained_model = train(
-        model, ds, epochs=N_EPOCHS, batch_size=BATCH_SIZE
-    )
+    trained_model = train(model, ds, epochs=N_EPOCHS, batch_size=BATCH_SIZE)
     save_model(
         trained_model,
         ds.track_2_idx,
         f"./model_states/{RUN_NAME}_con{CONTEXT_SIZE}_pl{N_PLAYLISTS}_emb{EMBEDDING_DIM}_ep{N_EPOCHS}.pt",
     )
 
-    to_tensorboard(
-        trained_model, ds, run_name=RUN_NAME
-    )
+    to_tensorboard(trained_model, ds, run_name=RUN_NAME)
 
     db.disconnect()

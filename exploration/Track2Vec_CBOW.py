@@ -177,7 +177,7 @@ class Track2VecTrainer:
         writer.add_embedding(
             self._model.embedding.weight,
             metadata=named_tracks,
-            tag=f"Track2Vec-CBOW",
+            tag="Track2Vec-CBOW",
         )
         writer.close()
 

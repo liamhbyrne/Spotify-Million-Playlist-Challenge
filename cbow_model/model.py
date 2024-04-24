@@ -39,6 +39,9 @@ def train(model: Track2Vec, ds_train: CBOWDataset, epochs: int, batch_size:int) 
         print(f"Epoch {epoch}")
         total_loss = 0
         for context, target in tqdm(data_loader):
+            context = context.to(DEVICE)
+            target = target.to(DEVICE)
+
             model.zero_grad()
             log_probs = model(context)
             loss = criterion(log_probs, target)
@@ -110,16 +113,18 @@ def to_tensorboard(model: Track2Vec, ds: CBOWDataset, run_name: str):
 if __name__ == "__main__":
     RUN_NAME = f"cbow_model@{time.strftime('%Y-%m-%d-%H-%M-%S')}"
     CONTEXT_SIZE = 5
-    N_PLAYLISTS = 20
+    N_PLAYLISTS = 10000
     EMBEDDING_DIM = 64
     N_EPOCHS = 1
     BATCH_SIZE = 32
+    DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
     db = DBManager()
     ds = CBOWDataset(db, n_playlists=N_PLAYLISTS, context_size=CONTEXT_SIZE)
     model = Track2Vec(
         num_tracks=ds.n_tracks, embedding_dim=EMBEDDING_DIM, context_size=CONTEXT_SIZE
-    )
+    ).to(DEVICE)
+
     trained_model = train(
         model, ds, epochs=N_EPOCHS, batch_size=BATCH_SIZE
     )

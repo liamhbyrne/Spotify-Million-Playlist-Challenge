@@ -111,14 +111,15 @@ def to_tensorboard(model: Track2Vec, ds: CBOWDataset, run_name: str):
 if __name__ == "__main__":
     RUN_NAME = f"cbow_model@{time.strftime('%Y-%m-%d-%H-%M-%S')}"
     CONTEXT_SIZE = 5
-    N_PLAYLISTS = 10
+    N_PLAYLISTS = 10000
+    MIN_FREQ = 4
     EMBEDDING_DIM = 64
     N_EPOCHS = 1
     BATCH_SIZE = 32
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
     db = DBManager()
-    ds = CBOWDataset(db, n_playlists=N_PLAYLISTS, context_size=CONTEXT_SIZE)
+    ds = CBOWDataset(db, n_playlists=N_PLAYLISTS, context_size=CONTEXT_SIZE, min_freq=MIN_FREQ)
     model = Track2Vec(
         num_tracks=ds.n_tracks, embedding_dim=EMBEDDING_DIM, context_size=CONTEXT_SIZE
     ).to(DEVICE)

@@ -1,3 +1,5 @@
+import logging
+
 import polars as pl
 import torch
 from torch.utils.data import Dataset
@@ -11,12 +13,16 @@ class CBOWDataset(Dataset):
     Selects tracks from the dataset on the SQLite database.
     """
 
-    def __init__(self, db_manager: DBManager, n_playlists: int, context_size: int = 5):
+    def __init__(self, db_manager: DBManager, n_playlists: int, context_size: int = 5, min_freq: int = 5):
         self.n_playlists = n_playlists
         self.context_size = context_size
+        self.min_freq = min_freq
         self.db = db_manager
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger.setLevel(logging.INFO)
         self.cur = self.db.get_cursor()
         self.dataset = self._make_dataset()
+
 
     def get_named_tracks(self) -> List[str]:
         """
@@ -49,10 +55,18 @@ class CBOWDataset(Dataset):
             track_idx: internal index of the track
         """
         query = f"""
-            SELECT PT.track_uri, PT.pid, PT.pos
+            SELECT PT.pid, PT.track_uri, PT.pos
             FROM playlist_track PT
-            WHERE PT.pid IN (SELECT pid FROM playlist LIMIT {self.n_playlists});
+            INNER JOIN (
+                SELECT track_uri
+                FROM playlist_track
+                GROUP BY track_uri
+                HAVING COUNT(pid) > {self.min_freq}
+            ) AS PT2 ON PT.track_uri = PT2.track_uri
+            WHERE pid < {self.n_playlists}
         """
+        self.logger.info("Querying database for playlist tracks . . .")
+
         # Playlist tracks as dataframe
         df_pl_tracks = pl.read_database(query, self.db.get_connection())
 
@@ -67,6 +81,8 @@ class CBOWDataset(Dataset):
                 self.track_2_idx, return_dtype=pl.UInt32
             )
         )
+        self.logger.info("Done.")
+
         return df_pl_tracks
 
     @property

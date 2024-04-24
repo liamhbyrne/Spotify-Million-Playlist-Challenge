@@ -5,7 +5,7 @@
 ---
 
 <p align="center">
-  <a href="https://github.com/liamhbyrne"><b>Liam Byrne</b>, <a href="https://github.com/samwatsonn"><b>Sam Watson</b></a>, <a href=""><b></b></a>, <a href=""><b></b></a>
+  <a href="https://github.com/liamhbyrne"><b>Liam Byrne</b>, <a href="https://github.com/samwatsonn"><b>Sam Watson</b></a>, <a href="https://github.com/jp3g20"><b>Joe Padden</b></a>, <a href="https://github.com/BenHipwell"><b>Ben Hipwell</b></a>
 </p>
 
 ---

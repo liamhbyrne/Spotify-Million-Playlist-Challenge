@@ -1,13 +1,11 @@
-import os
 import pickle
 import time
 
-import pandas as pd
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
-from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
+from tqdm import tqdm
 
 from cbow_model.dataset import CBOWDataset
 from data_storage.DBManager import DBManager
@@ -90,7 +88,7 @@ def load_model(
         tuple[Track2Vec, dict]: Model and track2idx mapping
     """
     model = Track2Vec(
-        num_tracks=len(pd.read_pickle(mapping_path)),
+        num_tracks=len(pickle.load(open(mapping_path, "rb"))),
         embedding_dim=embedding_dim,
         context_size=context_size,
     )
@@ -113,7 +111,7 @@ def to_tensorboard(model: Track2Vec, ds: CBOWDataset, run_name: str):
 if __name__ == "__main__":
     RUN_NAME = f"cbow_model@{time.strftime('%Y-%m-%d-%H-%M-%S')}"
     CONTEXT_SIZE = 5
-    N_PLAYLISTS = 10000
+    N_PLAYLISTS = 10
     EMBEDDING_DIM = 64
     N_EPOCHS = 1
     BATCH_SIZE = 32

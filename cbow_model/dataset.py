@@ -22,8 +22,6 @@ class CBOWDataset(Dataset):
         """
         Query DB to obtain artist names for each track, concatenate with track names.
         This is particularly useful for TensorBoard projections.
-
-        TODO: May make more sense to store the artist names beforehand.
         """
         query = f"""
                     SELECT artist.artist_name, track.track_name
@@ -51,9 +49,8 @@ class CBOWDataset(Dataset):
             track_idx: internal index of the track
         """
         query = f"""
-            SELECT PT.track_uri, PT.pid, PT.pos, T.track_name
+            SELECT PT.track_uri, PT.pid, PT.pos
             FROM playlist_track PT
-            JOIN track T ON PT.track_uri = T.track_uri
             WHERE PT.pid IN (SELECT pid FROM playlist LIMIT {self.n_playlists});
         """
         # Playlist tracks as dataframe

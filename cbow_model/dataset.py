@@ -13,11 +13,12 @@ class CBOWDataset(Dataset):
     Selects tracks from the dataset on the SQLite database.
     """
 
-    def __init__(self, db_manager: DBManager, n_playlists: int, context_size: int = 5, min_freq: int = 5):
+    def __init__(self, db_manager: DBManager, n_playlists: int, context_size: int = 5, min_freq: int = 5, preloaded_dataset_path: str = None):
         self.n_playlists = n_playlists
         self.context_size = context_size
         self.min_freq = min_freq
         self.db = db_manager
+        self.preloaded_dataset_path = preloaded_dataset_path
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.setLevel(logging.INFO)
         self.cur = self.db.get_cursor()
@@ -54,6 +55,18 @@ class CBOWDataset(Dataset):
             pos: position of the track in the playlist
             track_idx: internal index of the track
         """
+        # Load dataset from pkl if available
+        if self.preloaded_dataset_path:
+            self.logger.info(f"Loading dataset from {self.preloaded_dataset_path}")
+
+            df_pl_tracks = pl.read_csv(self.preloaded_dataset_path)
+
+            self.track_vocab = df_pl_tracks["track_uri"].unique().to_list() + ["PAD"]
+            self.track_2_idx = {track: idx for idx, track in enumerate(self.track_vocab)}
+            self.idx_2_track = lambda idx: self.track_vocab[idx]
+
+            return df_pl_tracks
+
         query = f"""
             SELECT PT.pid, PT.track_uri, PT.pos
             FROM playlist_track PT
@@ -84,6 +97,10 @@ class CBOWDataset(Dataset):
         self.logger.info("Done.")
 
         return df_pl_tracks
+
+    def save_dataset(self, path: str):
+        assert path.endswith(".csv"), "Path must end with .csv"
+        self.dataset.write_csv(path)
 
     @property
     def n_tracks(self) -> int:

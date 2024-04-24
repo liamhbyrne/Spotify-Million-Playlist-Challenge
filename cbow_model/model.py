@@ -119,7 +119,10 @@ if __name__ == "__main__":
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
     db = DBManager()
-    ds = CBOWDataset(db, n_playlists=N_PLAYLISTS, context_size=CONTEXT_SIZE, min_freq=MIN_FREQ)
+    ds = CBOWDataset(db, n_playlists=N_PLAYLISTS, context_size=CONTEXT_SIZE, min_freq=MIN_FREQ, preloaded_dataset_path="./datasets/cbow_dataset_test.csv")
+
+    # ds.save_dataset("./datasets/cbow_dataset_test.csv")
+
     model = Track2Vec(
         num_tracks=ds.n_tracks, embedding_dim=EMBEDDING_DIM, context_size=CONTEXT_SIZE
     ).to(DEVICE)

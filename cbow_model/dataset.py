@@ -1,13 +1,9 @@
 import logging
 
-import numpy as np
 import polars as pl
 import torch
-from torch import Tensor
 from torch.utils.data import Dataset
-from typing import List, Tuple
-
-from tqdm import tqdm
+from typing import List
 
 from data_storage.DBManager import DBManager
 
@@ -34,7 +30,6 @@ class CBOWDataset(Dataset):
         self.logger.setLevel(logging.INFO)
         self.cur = self.db.get_cursor()
         self.dataset = self._make_dataset()
-        # self.cbow_dataset = self._preprocess()
 
     def get_named_tracks(self) -> List[str]:
         """
@@ -108,28 +103,11 @@ class CBOWDataset(Dataset):
             )
         )
         self.logger.info("Done.")
-
         return df_pl_tracks
 
     def save_dataset(self, path: str):
         assert path.endswith(".csv"), "Path must end with .csv"
         self.dataset.write_csv(path)
-
-    # def _preprocess(self) -> List[Tuple[Tensor, int]]:
-    #     cbows = []
-    #     self.logger.info("Preprocessing dataset . . .")
-    #     for pid, tracks in tqdm(self.dataset.group_by(["pid"]), total=self.n_playlists):
-    #         track_ids = np.concatenate([
-    #             np.array([self.track_2_idx["PAD"]] * (self.context_size)),
-    #             tracks["track_idx"].to_numpy()
-    #         ])
-    #         window_size = self.context_size + 1  # include target in window
-    #         shape = (track_ids.size - window_size + 1, window_size)
-    #         strides = (track_ids.itemsize, track_ids.itemsize)
-    #         windows = np.lib.stride_tricks.as_strided(track_ids, shape=shape, strides=strides)
-    #         for window in windows:
-    #             cbows.append((torch.tensor(window[:-1]), window[-1]))
-    #     return cbows
 
     @property
     def n_tracks(self) -> int:
@@ -143,10 +121,7 @@ class CBOWDataset(Dataset):
         Assumes idx is the index of the out-of-place track.
         Gets previous context_size tracks.
         """
-        # return self.cbow_dataset[idx]
         target = self.dataset["track_idx"][idx]
-        # target_ohe = torch.zeros(self.n_tracks)
-        # target_ohe[target] = 1
 
         # Get previous context_size tracks
         pid = self.dataset["pid"][idx]

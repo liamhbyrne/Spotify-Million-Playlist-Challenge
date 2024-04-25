@@ -1,3 +1,4 @@
+
 import pickle
 import time
 
@@ -119,6 +120,8 @@ if __name__ == "__main__":
     N_EPOCHS = 1
     BATCH_SIZE = 32
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+    print(DEVICE)
+
 
     print(f"Run {RUN_NAME} on {DEVICE}\n Context size: {CONTEXT_SIZE}\n N playlists: {N_PLAYLISTS}\n Min freq: {MIN_FREQ}\n Embedding dim: {EMBEDDING_DIM}\n Epochs: {N_EPOCHS}\n Batch size: {BATCH_SIZE}")
 
@@ -128,7 +131,7 @@ if __name__ == "__main__":
         n_playlists=N_PLAYLISTS,
         context_size=CONTEXT_SIZE,
         min_freq=MIN_FREQ,
-        preloaded_dataset_path="./datasets/cbow_dataset_100k_min100.csv",
+        preloaded_dataset_path="/mainfs/lyceum/lhb1g20/Spotify-Million-Playlist-Challenge/cbow_model/datasets/cbow_dataset_100k_min100.csv",
     )
 
     print(f"Vocab size: {len(ds.track_vocab)}")

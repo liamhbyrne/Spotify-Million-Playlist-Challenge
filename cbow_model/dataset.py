@@ -34,7 +34,7 @@ class CBOWDataset(Dataset):
         self.logger.setLevel(logging.INFO)
         self.cur = self.db.get_cursor()
         self.dataset = self._make_dataset()
-        # self.cbow_dataset = self._preprocess()
+        self.cbow_dataset = self._preprocess()
 
     def get_named_tracks(self) -> List[str]:
         """
@@ -115,56 +115,57 @@ class CBOWDataset(Dataset):
         assert path.endswith(".csv"), "Path must end with .csv"
         self.dataset.write_csv(path)
 
-    # def _preprocess(self) -> List[Tuple[Tensor, int]]:
-    #     cbows = []
-    #     self.logger.info("Preprocessing dataset . . .")
-    #     for pid, tracks in tqdm(self.dataset.group_by(["pid"]), total=self.n_playlists):
-    #         track_ids = np.concatenate([
-    #             np.array([self.track_2_idx["PAD"]] * (self.context_size)),
-    #             tracks["track_idx"].to_numpy()
-    #         ])
-    #         window_size = self.context_size + 1  # include target in window
-    #         shape = (track_ids.size - window_size + 1, window_size)
-    #         strides = (track_ids.itemsize, track_ids.itemsize)
-    #         windows = np.lib.stride_tricks.as_strided(track_ids, shape=shape, strides=strides)
-    #         for window in windows:
-    #             cbows.append((torch.tensor(window[:-1]), window[-1]))
-    #     return cbows
+    def _preprocess(self) -> List[Tuple[Tensor, int]]:
+        cbows = []
+        self.logger.info("Preprocessing dataset . . .")
+        for pid, tracks in tqdm(self.dataset.group_by(["pid"]), total=self.n_playlists):
+            track_ids = np.concatenate([
+                np.array([self.track_2_idx["PAD"]] * (self.context_size)),
+                tracks["track_idx"].to_numpy()
+            ])
+            window_size = self.context_size + 1  # include target in window
+            shape = (track_ids.size - window_size + 1, window_size)
+            strides = (track_ids.itemsize, track_ids.itemsize)
+            windows = np.lib.stride_tricks.as_strided(track_ids, shape=shape, strides=strides)
+            for window in windows:
+                cbows.append((torch.tensor(window[:-1]), window[-1]))
+        return cbows
 
     @property
     def n_tracks(self) -> int:
         return len(self.track_vocab)
 
     def __len__(self):
-        return len(self.dataset)
+        return len(self.cbow_dataset)
 
     def __getitem__(self, idx):
         """
         Assumes idx is the index of the out-of-place track.
         Gets previous context_size tracks.
         """
-        # return self.cbow_dataset[idx]
-        target = self.dataset["track_idx"][idx]
-        # target_ohe = torch.zeros(self.n_tracks)
-        # target_ohe[target] = 1
+        return self.cbow_dataset[idx]
+        
+        # target = self.dataset["track_idx"][idx]
+        # # target_ohe = torch.zeros(self.n_tracks)
+        # # target_ohe[target] = 1
 
-        # Get previous context_size tracks
-        pid = self.dataset["pid"][idx]
-        pos = self.dataset["pos"][idx]
-        context = (
-            self.dataset.filter(
-                (self.dataset["pid"] == pid) & (self.dataset["pos"] < pos)
-            )
-            .tail(self.context_size)["track_idx"]
-            .to_list()
-        )
+        # # Get previous context_size tracks
+        # pid = self.dataset["pid"][idx]
+        # pos = self.dataset["pos"][idx]
+        # context = (
+        #     self.dataset.filter(
+        #         (self.dataset["pid"] == pid) & (self.dataset["pos"] < pos)
+        #     )
+        #     .tail(self.context_size)["track_idx"]
+        #     .to_list()
+        # )
 
-        # Pad context if necessary
-        if len(context) < self.context_size:
-            pad_size = self.context_size - len(context)
-            context = [self.track_2_idx["PAD"]] * pad_size + context
+        # # Pad context if necessary
+        # if len(context) < self.context_size:
+        #     pad_size = self.context_size - len(context)
+        #     context = [self.track_2_idx["PAD"]] * pad_size + context
 
-        # Convert to pytorch tensors
-        context = torch.tensor(context)
-        # no need for one-hot encoding with NLLLoss
-        return context, target
+        # # Convert to pytorch tensors
+        # context = torch.tensor(context)
+        # # no need for one-hot encoding with NLLLoss
+        # return context, target

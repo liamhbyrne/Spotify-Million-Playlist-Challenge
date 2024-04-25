@@ -31,7 +31,7 @@ class Track2Vec(nn.Module):
 
 def train(
     model: Track2Vec, ds_train: CBOWDataset, epochs: int, batch_size: int
-) -> Track2Vec:
+    ) -> Track2Vec:
     print("Training CBOW model")
     criterion = nn.NLLLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
@@ -102,7 +102,7 @@ def load_model(
 
 
 def to_tensorboard(model: Track2Vec, ds: CBOWDataset, run_name: str):
-    writer = SummaryWriter(f"./runs/{run_name}/")
+    writer = SummaryWriter(run_name)
     writer.add_embedding(
         model.embedding.weight,
         metadata=ds.get_named_tracks(),
@@ -112,10 +112,10 @@ def to_tensorboard(model: Track2Vec, ds: CBOWDataset, run_name: str):
 
 
 if __name__ == "__main__":
-    RUN_NAME = f"cbow_model@{time.strftime('%Y-%m-%d-%H-%M-%S')}"
+    RUN_NAME = f"CBOW_run_100k_min_5_PP@{time.strftime('%Y-%m-%d-%H-%M-%S')}"
     CONTEXT_SIZE = 5
     N_PLAYLISTS = 100000
-    MIN_FREQ = 100
+    MIN_FREQ = 5
     EMBEDDING_DIM = 32
     N_EPOCHS = 1
     BATCH_SIZE = 32
@@ -131,7 +131,7 @@ if __name__ == "__main__":
         n_playlists=N_PLAYLISTS,
         context_size=CONTEXT_SIZE,
         min_freq=MIN_FREQ,
-        preloaded_dataset_path="/mainfs/lyceum/lhb1g20/Spotify-Million-Playlist-Challenge/cbow_model/datasets/cbow_dataset_100k_min100.csv",
+        preloaded_dataset_path="/mainfs/lyceum/lhb1g20/Spotify-Million-Playlist-Challenge/cbow_model/datasets/cbow_dataset_100k_min5.csv",
     )
 
     print(f"Vocab size: {len(ds.track_vocab)}")
@@ -146,9 +146,9 @@ if __name__ == "__main__":
     save_model(
         trained_model,
         ds.track_2_idx,
-        f"./model_states/{RUN_NAME}_con{CONTEXT_SIZE}_pl{N_PLAYLISTS}_emb{EMBEDDING_DIM}_ep{N_EPOCHS}.pt",
+        f"/mainfs/lyceum/lhb1g20/Spotify-Million-Playlist-Challenge/cbow_model/model_states/{RUN_NAME}_con{CONTEXT_SIZE}_pl{N_PLAYLISTS}_emb{EMBEDDING_DIM}_ep{N_EPOCHS}.pt",
     )
 
-    to_tensorboard(trained_model, ds, run_name=RUN_NAME)
+    to_tensorboard(trained_model, ds, run_name=f"/mainfs/lyceum/lhb1g20/Spotify-Million-Playlist-Challenge/cbow_model/runs/{RUN_NAME}_con{CONTEXT_SIZE}_pl{N_PLAYLISTS}_emb{EMBEDDING_DIM}_min{MIN_FREQ}/")
 
     db.disconnect()

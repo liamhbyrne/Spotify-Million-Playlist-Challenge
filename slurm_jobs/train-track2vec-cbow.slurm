@@ -8,11 +8,11 @@
 ####################################
 #SBATCH --ntasks=1     # Number of processor cores (i.e. tasks)
 #SBATCH --nodes=1     # Number of nodes requested
-#SBATCH --cpus-per-task=2     # Threads per task
+#SBATCH --cpus-per-task=4     # Threads per task
 #SBATCH --time=60:00:00   # walltime
 #SBATCH --partition=lyceum # Name of the parititon
-#SBATCH --output=logs/train_cbow_20k_100min.%j.out
-#SBATCH --error=logs/train_cbow_20k_100min.%j.err
+#SBATCH --output=logs/PP_train_cbow_100k_5min.%j.out
+#SBATCH --error=logs/PP_train_cbow_100k_5min.%j.err
 
 module load conda
 

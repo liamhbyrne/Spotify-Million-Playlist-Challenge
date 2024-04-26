@@ -95,7 +95,7 @@ def load_model(
         embedding_dim=embedding_dim,
         context_size=context_size,
     )
-    model.load_state_dict(torch.load(model_path))
+    model.load_state_dict(torch.load(model_path, map_location=DEVICE))
     with open(mapping_path, "rb") as f:
         track2idx = pickle.load(f)
     return model, track2idx
@@ -114,14 +114,13 @@ def to_tensorboard(model: Track2Vec, ds: CBOWDataset, run_name: str):
 if __name__ == "__main__":
     RUN_NAME = f"CBOW_run_100k_min_5_PP@{time.strftime('%Y-%m-%d-%H-%M-%S')}"
     CONTEXT_SIZE = 5
-    N_PLAYLISTS = 100000
+    N_PLAYLISTS = 1000000
     MIN_FREQ = 5
     EMBEDDING_DIM = 32
     N_EPOCHS = 1
     BATCH_SIZE = 32
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     print(DEVICE)
-
 
     print(f"Run {RUN_NAME} on {DEVICE}\n Context size: {CONTEXT_SIZE}\n N playlists: {N_PLAYLISTS}\n Min freq: {MIN_FREQ}\n Embedding dim: {EMBEDDING_DIM}\n Epochs: {N_EPOCHS}\n Batch size: {BATCH_SIZE}")
 
@@ -131,12 +130,12 @@ if __name__ == "__main__":
         n_playlists=N_PLAYLISTS,
         context_size=CONTEXT_SIZE,
         min_freq=MIN_FREQ,
-        preloaded_dataset_path="/mainfs/lyceum/lhb1g20/Spotify-Million-Playlist-Challenge/cbow_model/datasets/cbow_dataset_100k_min5.csv",
+        # preloaded_dataset_path="/mainfs/lyceum/lhb1g20/Spotify-Million-Playlist-Challenge/cbow_model/datasets/cbow_dataset_100k_min5.csv",
     )
 
     print(f"Vocab size: {len(ds.track_vocab)}")
 
-    # ds.save_dataset("./datasets/cbow_dataset_100k_min100.csv")
+    ds.save_dataset("./datasets/cbow_dataset_1M_min5.csv")
 
     model = Track2Vec(
         num_tracks=ds.n_tracks, embedding_dim=EMBEDDING_DIM, context_size=CONTEXT_SIZE
@@ -152,3 +151,20 @@ if __name__ == "__main__":
     to_tensorboard(trained_model, ds, run_name=f"/mainfs/lyceum/lhb1g20/Spotify-Million-Playlist-Challenge/cbow_model/runs/{RUN_NAME}_con{CONTEXT_SIZE}_pl{N_PLAYLISTS}_emb{EMBEDDING_DIM}_min{MIN_FREQ}/")
 
     db.disconnect()
+
+    """
+    Load Existing Model
+    """
+    # model, mapping = load_model(
+    #     model_path=r"C:\Users\Liam\Documents\COMP6252-DLT\group_cw\model_files\CBOW_run_100k_min_100_withPreproc@2024-04-25-12-41-01_con5_pl100000_emb32_ep1.pt",
+    #     mapping_path=r"C:\Users\Liam\Documents\COMP6252-DLT\group_cw\model_files\CBOW_run_100k_min_100_withPreproc@2024-04-25-12-41-01_con5_pl100000_emb32_ep1-track2idx.pkl",
+    #     context_size=5,
+    #     embedding_dim=32
+    # )
+    #
+    # # Get embedding for Taylor Swift: Love Story
+    # track_uri = "spotify:track:1vrd6UOGamcKNGnSHJQlSt"
+    # idx = mapping[track_uri]
+    # embedding = model.embedding.weight[idx]
+    #
+    # print(embedding)

@@ -3,3 +3,4 @@ venv/
 __pycache__/
 dump.sql
 .ipynb_checkpoints/
+config.py

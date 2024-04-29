@@ -1,0 +1,5 @@
+embeddings {
+  tensor_name: "Track2Vec-CBOW:00000"
+  metadata_path: "00000/Track2Vec-CBOW\\metadata.tsv"
+  tensor_path: "00000/Track2Vec-CBOW\\tensors.tsv"
+}

@@ -22,10 +22,10 @@ backup_available = False   # If a backup file of the dataframe has been created 
 # Loading up song embeddings
 
 if(gensim_song_embeddings == False):
-    with open('../data_storage/CBOW_run_1M_min_5_PP@2024-04-26-10-27-43_con5_pl1000000_emb64_ep1-track2idx.pkl', 'rb') as f:
+    with open("/mainfs/lyceum/lhb1g20/Spotify-Million-Playlist-Challenge/cbow_model/model_states/CBOW_run_1M_min_5_PP@2024-04-26-10-27-43_con5_pl1000000_emb64_ep1-track2idx.pkl", 'rb') as f:
         data_uris = pickle.load(f)
 
-    model_data = torch.load('../data_storage/CBOW_run_1M_min_5_PP@2024-04-26-10-27-43_con5_pl1000000_emb64_ep1.pt', map_location=torch.device('cpu'))
+    model_data = torch.load("/mainfs/lyceum/lhb1g20/Spotify-Million-Playlist-Challenge/cbow_model/model_states/CBOW_run_1M_min_5_PP@2024-04-26-10-27-43_con5_pl1000000_emb64_ep1.pt", map_location=torch.device('cpu'))
 
     embeddings = model_data['embedding.weight']
     embeddings_dict = {}
@@ -34,7 +34,7 @@ if(gensim_song_embeddings == False):
         embeddings_dict[uri] = embeddings[idx]
 else:
     
-    with open('song_embeddings.pkl', 'rb') as f:
+    with open("/mainfs/scratch/lhb1g20/dlt/song_embeddings.pkl", 'rb') as f:
         embeddings_dict = pickle.load(f)
 
     for key, value in embeddings_dict.items():
@@ -48,7 +48,7 @@ else:
 
 # Loading up training data from the database
 
-conn = sqlite3.connect('../data_storage/spotify.db')
+conn = sqlite3.connect("/mainfs/scratch/lhb1g20/spotify.db")
 if backup_available == False:
     sql_query = '''
         SELECT 
@@ -91,11 +91,11 @@ if read_from_csv:
 #Loading artist and playlist title embeddings
 
 # Load artist embeddings from pickle file
-with open("../data_storage/artist_embeddings.pkl", "rb") as f:
+with open("/mainfs/scratch/lhb1g20/dlt/artist_embeddings.pkl", "rb") as f:
     artist_embeddings = pickle.load(f)
 
 # Load playlist name embeddings from pickle file
-with open("../data_storage/playlist_name_embeddings.pkl", "rb") as f:
+with open("/mainfs/scratch/lhb1g20/dlt/playlist_name_embeddings.pkl", "rb") as f:
     playlist_embeddings = pickle.load(f)
 
 
@@ -450,7 +450,7 @@ for epoch in range(num_epochs):
 # CREATION OF FILES FROM THE CHALLENGE DATASET
 
 
-file_path = "../challenge_set/challenge_set.json"
+file_path = "/mainfs/scratch/lhb1g20/dlt/challenge_set.json"
 
 # Load the JSON data from the file
 with open(file_path, 'r') as file:
@@ -550,7 +550,7 @@ with torch.no_grad():
             playlist_predictions.append(playlist_prediction)
 
 # Write the playlist predictions to a CSV file
-csv_file_path = "playlist_predictions.csv"
+csv_file_path = "/mainfs/scratch/lhb1g20/dlt/playlist_predictions.csv"
 with open(csv_file_path, 'w') as csvfile:
     # Write each playlist prediction to a separate line in the CSV file
     for playlist_prediction in playlist_predictions:

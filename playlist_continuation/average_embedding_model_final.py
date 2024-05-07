@@ -14,19 +14,19 @@ import torch
 import os
 
 #ADJUSTABLE PARAMETERS THAT CHANGE RUN SPEED 
-minimum_playlist_inclusion = 1000000 # the minimum number of playlists a song has to be in to be considered for model output
-playlist_subset = 50 # subset of playlist to train on - maximum of 1,000,000
+minimum_playlist_inclusion = 750 # the minimum number of playlists a song has to be in to be considered for model output
+playlist_subset = 80000 # subset of playlist to train on - maximum of 1,000,000
 gensim_song_embeddings = True  # Dictates which song embeddings to used. true means gensim are used, false means ours are used.
-backup_available = False   # If a backup file of the dataframe has been created set to true otherwise false
+backup_available = True   # If a backup file of the dataframe has been created set to true otherwise false
 
-# Loading up song embeddings
-print(os.getcwd())
+
+# Depending on the song embedding type chosen, song embeddings are loaded into a dicitonary of track_uri to embedding
 
 if(gensim_song_embeddings == False):
-    with open("/mainfs/lyceum/lhb1g20/Spotify-Million-Playlist-Challenge/cbow_model/model_states/CBOW_run_1M_min_5_PP@2024-04-26-10-27-43_con5_pl1000000_emb64_ep1-track2idx.pkl", 'rb') as f:
+    with open("/running_python/CBOW_run_1M_min_5_PP@2024-04-26-10-27-43_con5_pl1000000_emb64_ep1-track2idx.pkl", 'rb') as f:
         data_uris = pickle.load(f)
 
-    model_data = torch.load("/mainfs/lyceum/lhb1g20/Spotify-Million-Playlist-Challenge/cbow_model/model_states/CBOW_run_1M_min_5_PP@2024-04-26-10-27-43_con5_pl1000000_emb64_ep1.pt", map_location=torch.device('cpu'))
+    model_data = torch.load("/running_python/CBOW_run_1M_min_5_PP@2024-04-26-10-27-43_con5_pl1000000_emb64_ep1.pt", map_location=torch.device('cpu'))
 
     embeddings = model_data['embedding.weight']
     embeddings_dict = {}
@@ -35,7 +35,7 @@ if(gensim_song_embeddings == False):
         embeddings_dict[uri] = embeddings[idx]
 else:
     
-    with open("/mainfs/scratch/lhb1g20/dlt/song_embeddings.pkl", 'rb') as f:
+    with open("running_python/song_embeddings.pkl", 'rb') as f:
         embeddings_dict = pickle.load(f)
 
     for key, value in embeddings_dict.items():
@@ -43,13 +43,15 @@ else:
 
     embedding_tensors = list(embeddings_dict.values())
 
-    average_embedding = torch.mean(torch.stack(embedding_tensors), dim=0)
+    average_embedding = torch.mean(torch.stack(embedding_tensors), dim=0) # An average embedding is calculated as a PAD for tracks that 
 
-    first_entry_key, first_entry_value = next(iter(embeddings_dict.items()))
+# Load artist embeddings from pickle file
+with open("running_python/artist_embeddings.pkl", "rb") as f:
+    artist_embeddings = pickle.load(f)
 
-# Loading up training data from the database
+# Loading up all training data from the database
 
-conn = sqlite3.connect("/mainfs/scratch/lhb1g20/spotify.db")
+conn = sqlite3.connect("running_python/spotify.db")
 if backup_available == False:
     sql_query = '''
         SELECT 
@@ -73,7 +75,7 @@ if backup_available == False:
     '''
 
     df = pd.read_sql_query(sql_query, conn)
-
+    #dataframe holding each playlist as a row with its songs, artists and other metadata
     grouped = df.groupby(['pid', 'playlist_name', 'num_albums', 'num_tracks', 'num_artists']).agg({
         'artist_uri': lambda x: list(x),
         'track_uri': lambda x: list(x)
@@ -87,22 +89,12 @@ if backup_available == False:
 
     read_from_csv = False
 else:
-    grouped = pd.read_csv('back_up.csv')
+    grouped = pd.read_csv('running_python/back_up.csv')
     read_from_csv = True
 
 if read_from_csv:
     grouped['artists'] = grouped['artists'].apply(ast.literal_eval)
     grouped['songs'] = grouped['songs'].apply(ast.literal_eval)
-
-#Loading artist and playlist title embeddings
-
-# Load artist embeddings from pickle file
-with open("/mainfs/scratch/lhb1g20/dlt/artist_embeddings.pkl", "rb") as f:
-    artist_embeddings = pickle.load(f)
-
-# Load playlist name embeddings from pickle file
-with open("/mainfs/scratch/lhb1g20/dlt/playlist_name_embeddings.pkl", "rb") as f:
-    playlist_embeddings = pickle.load(f)
 
 
 # Function to calculate average embedding for a list of embeddings
@@ -113,28 +105,20 @@ def calculate_average_embedding(embedding_list):
         return np.zeros_like(next(iter(artist_embeddings.values())))
     
 
-
+# Function to create an embedding to represent the playlists name
 tokenizer = RobertaTokenizer.from_pretrained('roberta-base')
 roberta_model = RobertaModel.from_pretrained('roberta-base')
 def generate_playlist_name_embedding(playlist_name):
-    if playlist_name is None:
+    if not isinstance(playlist_name, str):
         # If playlist_name is None, create a pad embedding of length 768
-        return np.zeros(768)  # Assuming length 768 for the pad embedding
+        return np.zeros(768) 
     else:
-        # Tokenize the playlist name
         tokenized_input = tokenizer(playlist_name, return_tensors='pt', padding=True, truncation=True, max_length=128)
-        
-        # Forward pass through the model
         with torch.no_grad():
             outputs = roberta_model(**tokenized_input)
-        
-        # Get the last hidden states
         last_hidden_states = outputs.last_hidden_state
-        
-        # Extract the embedding from the nested structure
         mean_embedding = torch.mean(last_hidden_states, dim=1).squeeze().numpy()
         
-        # Ensure the embedding has the same dimensionality as other embeddings
         return np.atleast_1d(mean_embedding)
 
 
@@ -144,23 +128,17 @@ import torch
 import random
 from sklearn.model_selection import train_test_split
 
+# K values to iterate through giving a variety of songs to train on for the model
 k_values = [1,5,10,25,50]
 
 subset_size = playlist_subset
 random_subset = grouped.sample(n=subset_size, random_state=42)
 
-# Split the data into training and testing sets
 train_df, test_df = train_test_split(random_subset, test_size=0.2, random_state=42)
 
-# Verify the size of training and testing sets
-print("Training set size:", len(train_df))
-print("Testing set size:", len(test_df))
-
-# Modify training set to use average song embedding, average artist embedding, and playlist name embedding
-# Modify training set to use average song embedding, average artist embedding, and playlist name embedding
 training_embeddings = []  # Holds the embeddings of k songs in the playlist, average artist embedding, average song embedding, playlist name embedding, and additional features
 training_labels = []  # Holds the remaining songs in the playlist that are to be predicted
-training_seed_tracks = []
+training_seed_tracks = [] # Holds the seed tracks so that they cannot be chosen when finding the best 500 songs for a playlist
 for _, row in train_df.iterrows():
     p_songs = row['songs']
     k = random.choice(k_values)
@@ -169,10 +147,9 @@ for _, row in train_df.iterrows():
         # Calculate average song embedding only over the selected k songs
         selected_song_embeddings = [embeddings_dict.get(song_uri, []) for song_uri in selected_songs]
         for song_uri in selected_songs:
-            # Check if the embedding exists in embeddings_dict
             if song_uri in embeddings_dict:
                 selected_song_embeddings.append(embeddings_dict[song_uri])
-        # Check if there are embeddings for selected songs
+                
         if selected_song_embeddings:
             # Calculate the average song embedding
             average_song_embedding = np.mean(selected_song_embeddings, axis=0)
@@ -188,9 +165,9 @@ for _, row in train_df.iterrows():
         playlist_name_embedding = generate_playlist_name_embedding(row['playlist_name'])
 
         p_embeddings = [
-            np.atleast_1d(average_song_embedding),  # Ensure at least one-dimensional
-            np.atleast_1d(average_artist_embedding),  # Ensure at least one-dimensional
-            playlist_name_embedding,  # Playlist name embedding
+            np.atleast_1d(average_song_embedding), 
+            np.atleast_1d(average_artist_embedding), 
+            playlist_name_embedding,  
             row[['num_albums', 'num_tracks', 'num_artists']].values  # Additional features as a single array
         ]
         training_embeddings.append(np.concatenate(p_embeddings))
@@ -198,8 +175,6 @@ for _, row in train_df.iterrows():
         remaining_songs = [str(song) for song in p_songs if song not in selected_songs]
         training_labels.append(remaining_songs)
         training_seed_tracks.append(selected_songs)
-    else:
-        print(f"no becuase {len(p_songs)} for {k}")
 
 # Convert the training data to PyTorch tensors
 training_tensor = torch.tensor(training_embeddings, dtype=torch.float32)
@@ -376,13 +351,13 @@ for song_uri, embedding in embeddings_dict.items():
 # Move model and tensors to CUDA device if available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Define your model using PyTorch
+# Model defintion
 class CustomModel(nn.Module):
     def __init__(self, input_size):
         super(CustomModel, self).__init__()
         self.input_size = input_size
-        self.dense1 = nn.Linear(input_size, 256)  # Adjust the input size of the first layer
-        self.dense2 = nn.Linear(256, 128)  # Adjust the input size of the first layer
+        self.dense1 = nn.Linear(input_size, 256)  #
+        self.dense2 = nn.Linear(256, 128)  #
         self.dense3 = nn.Linear(128, 64)
 
     def forward(self, x):
@@ -398,28 +373,32 @@ class ClosestEmbeddingsLayer(nn.Module):
         self.num_closest = num_closest
 
     def forward(self, generated_embeddings, seed_tracks):
+        print(f'...Finding closest embeddings...')
         closest_embeddings_batch = []
-        i = 0
-        for generated_embedding in generated_embeddings:
-            # Compute cosine similarity between the generated embedding and all embeddings in embeddings_dict
-            similarities = {}
-            for key, value in filtered_embeddings_dict.items():
-                similarity = torch.nn.functional.cosine_similarity(generated_embedding.unsqueeze(0), value.unsqueeze(0))
-                similarities[key] = similarity.item()
-            
-            # Sort the similarities and get the top num_closest embeddings
-            closest_embeddings = sorted(similarities, key=similarities.get, reverse=True)[:2000]
-            
-            # Exclude seed tracks from the closest embeddings
-            closest_embeddings = [embedding for embedding in closest_embeddings if embedding not in seed_tracks[i]]
-
-            closest_embeddings = closest_embeddings[:500]
-
-            
-            closest_embeddings_batch.append(closest_embeddings)
-            i = i  + 1
+        generated_embeddings = generated_embeddings.to('cpu')
+        uris = list(filtered_embeddings_dict.keys())
         
+        for i, generated_embedding in enumerate(generated_embeddings):
+            current_seed_tracks = seed_tracks[i]
+            current_seed_tracks_set = set(current_seed_tracks)
+            
+            embedding_arrays = np.stack(list(filtered_embeddings_dict.values()))
+            # Compute dot product between all embeddings and the generated embedding
+            scores = np.dot(embedding_arrays, generated_embedding.detach().numpy())
+            # Filter out seed tracks
+            top_500_indices = [j for j, uri in enumerate(uris) if uri not in current_seed_tracks_set]
+            
+            # Get indices of the top 500 closest embeddings excluding seed_tracks
+            top_500_indices = np.argpartition(scores[top_500_indices], -500)[-500:]
+            # Sort the top indices by actual similarity score for accurate ranking
+            top_500_indices = top_500_indices[np.argsort(-scores[top_500_indices])]
+            closest_uris = [uris[top_500_indices[j]] for j in range(len(top_500_indices))]
+            closest_embeddings_batch.append(closest_uris)
+
         return closest_embeddings_batch
+
+
+
 
 input_size = training_tensor.shape[1]  # Get input size from the shape of your input tensor
 model = CustomModel(input_size).to(device)
@@ -429,7 +408,7 @@ closest_embeddings_layer = ClosestEmbeddingsLayer().to(device)
 optimizer = optim.Adam(model.parameters())
 
 # Training loop
-num_epochs = 20
+num_epochs = 1
 batch_size = 32
 for epoch in range(num_epochs):
     model.train()
@@ -456,18 +435,18 @@ for epoch in range(num_epochs):
             val_output = model(batch_input)
             val_closest_embeddings = closest_embeddings_layer(val_output, batch_seed_tracks)
             val_loss = playlist_loss(batch_target, val_closest_embeddings)
-            val_loss_total += val_loss.item()
+            val_loss_tensor = torch.tensor(val_loss, dtype=torch.float32, device=device)  # Convert to PyTorch tensor
+            val_loss_total += val_loss_tensor.item()
 
     # Calculate the average validation loss across all batches
     average_val_loss = val_loss_total / (len(testing_tensor) / batch_size)
     print(f"Epoch {epoch+1}, Validation Loss: {average_val_loss:.4f}")
 
 
-
 # CREATION OF FILES FROM THE CHALLENGE DATASET
 
 
-file_path = "/mainfs/scratch/lhb1g20/dlt/challenge_set.json"
+file_path = "running_python/challenge_set.json"
 
 # Load the JSON data from the file
 with open(file_path, 'r') as file:
@@ -497,14 +476,12 @@ for playlist in all_playlists:
         #print(f"embedding: {embedding}")
         if embedding is not None:
             selected_song_embeddings.append(embedding)
-            seed_tracks.append(song_uri)
+            seed_tracks.append(embedding)
 
     if selected_song_embeddings:
         average_song_embedding = calculate_average_embedding(selected_song_embeddings)
     else:
         average_song_embedding = np.zeros(pad_embedding_length_song)
-
-    #print(f"song: {len(average_song_embedding)}")
 
     selected_artists = []
     for song_dict in tracks:
@@ -518,12 +495,7 @@ for playlist in all_playlists:
     else:
         average_artist_embedding = np.zeros(pad_embedding_length_artist)
 
-    #print(f"artist: {len(average_artist_embedding)}")
-
-
-    #print(f"playlist name: {playlist_name}")
     playlist_name_embedding = generate_playlist_name_embedding(playlist_name)
-    #print(f"playlist embedding {len(playlist_name_embedding)}")
     
     # Additional features
     additional_features = np.array([playlist['num_holdouts'], playlist['num_tracks'], playlist['num_samples']])
@@ -569,7 +541,7 @@ with torch.no_grad():
             playlist_predictions.append(playlist_prediction)
 
 # Write the playlist predictions to a CSV file
-csv_file_path = "/mainfs/scratch/lhb1g20/dlt/playlist_predictions.csv"
+csv_file_path = "running_python/playlist_predictions_2.csv"
 with open(csv_file_path, 'w') as csvfile:
     # Write each playlist prediction to a separate line in the CSV file
     for playlist_prediction in playlist_predictions:

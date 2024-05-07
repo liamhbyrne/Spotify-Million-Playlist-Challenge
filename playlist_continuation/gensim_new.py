@@ -6,8 +6,6 @@ from gensim.models.callbacks import CallbackAny2Vec
 import csv
 import logging
 import os
-from gensim.test.utils import datapath
-from gensim.models.word2vec import LineSentence
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 

@@ -31,11 +31,11 @@ conn = sqlite3.connect(r'C:\Users\Sam\spotify\spotify.db')
 query = f"""
     SELECT playlist.pid, playlist.playlist_name
     FROM playlist
-    LIMIT 100000
+    LIMIT 5000
     """
 playlist_df = pl.read_database(query, conn)
 
-def get_closest_pids(playlist_name: str, n=2) -> List[int]:
+def get_closest_pids(playlist_name: str, n=1) -> List[int]:
     closest_playlist_names = difflib.get_close_matches(
         playlist_name, playlist_df["playlist_name"].to_list(),
         n=n, cutoff=0
@@ -43,23 +43,19 @@ def get_closest_pids(playlist_name: str, n=2) -> List[int]:
     print(f"Matched {playlist_name} to {closest_playlist_names}")
     return playlist_df.filter(pl.col("playlist_name").is_in(closest_playlist_names))["pid"].to_list()
 
-
 def get_tracks_of_similar_playlist(playlist_name: str) -> List[str]:
     pids = get_closest_pids(playlist_name)
-    pids_str = ""
-    for pid in pids:
-        pids_str += f"{pid}, "
-    pids_str = pids_str[:-2]
     query = f"""
         SELECT PT.pid, GROUP_CONCAT(PT.track_uri)
         FROM playlist_track PT
-        WHERE PT.pid IN ({pids_str})
+        WHERE PT.pid == {pids[0]}
         GROUP BY PT.pid;
         """
     playlist_tracks = pl.read_database(query, conn)
-    return playlist_tracks.filter(
-        pl.col("GROUP_CONCAT(PT.track_uri)").str.len_bytes() == playlist_tracks["GROUP_CONCAT(PT.track_uri)"].str.len_bytes().max()
-    )["GROUP_CONCAT(PT.track_uri)"].item().split(',')
+    return playlist_tracks[0]["GROUP_CONCAT(PT.track_uri)"].item().split(',')
+    # return playlist_tracks.filter(
+    #     pl.col("GROUP_CONCAT(PT.track_uri)").str.len_bytes() == playlist_tracks["GROUP_CONCAT(PT.track_uri)"].str.len_bytes().max()
+    # )["GROUP_CONCAT(PT.track_uri)"].item().split(',')
 
 
 playlist_predictions = []
